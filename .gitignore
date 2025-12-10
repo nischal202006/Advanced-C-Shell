@@ -1,0 +1,13 @@
+# compiled output
+shell/shell.out
+shell/src/*.o
+networking/client
+networking/server
+
+# logs
+*.txt
+!README.md
+
+# OS files
+.DS_Store
+Thumbs.db
