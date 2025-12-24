@@ -1,142 +1,93 @@
-# Custom Shell & Reliable UDP Protocol
+<div align="center">
+  <h1>Advanced Custom C-Shell & Reliable UDP Protocol (SHAM)</h1>
+  <p><strong>A Systems Programming Capstone Project Built From Scratch in C</strong></p>
+</div>
 
-A systems programming project built from scratch in C — covers shell implementation and network protocol design.
-## Author 
-Name:G.Nischal Rollno:2024102070
-## What's in here
+## Overview
 
-**Shell** — A working interactive shell (like a simpler bash) with piping, redirection, background processes, job control, and signal handling.
+This repository hosts a comprehensive systems programming project featuring two major components: a fully functional **Interactive POSIX Shell** and a custom **Reliable Transport Protocol (SHAM)** built over UDP. 
 
-**Networking** — A reliable transport protocol (SHAM) on top of UDP. Basically reimplementing the important parts of TCP: handshakes, sliding window, retransmission, flow control, etc.
-
-Both are written in C99 for Linux/WSL. No external libraries except OpenSSL for MD5 checksums in the networking part.
+Developed entirely in **C99** for Linux/WSL without relying on heavy external libraries (except OpenSSL for MD5 checksums), this project demonstrates deep, low-level understanding of operating systems, process management, formal grammar parsing, socket programming, and network protocols.
 
 ---
 
-## Shell (`shell/`)
+## Key Features
 
-An interactive POSIX shell that handles most of what you'd expect from a real shell:
+### The Custom Shell (`shell/`)
+An interactive, robust command-line interpreter featuring advanced process management and I/O redirection.
 
-- Prompt shows `<user@host:~/path>` with home dir substitution
-- Built-in commands: `hop` (cd), `reveal` (ls), `log` (history), `activities`, `ping`, `fg`, `bg`
-- I/O redirection with `<`, `>`, `>>`
-- Multi-stage piping (`cmd1 | cmd2 | cmd3`)
-- Background processes with `&`, sequential execution with `;`
-- Ctrl-C forwards to foreground process, Ctrl-Z stops it, Ctrl-D exits
-- Persistent command history saved to `.shell_log`
-- Background job tracking with zombie reaping
+*   **Process & Job Control**: Full background job tracking with zombie reaping. Implements process groups, foregrounding (`fg`), backgrounding (`bg`), and native signal forwarding (`Ctrl-C`, `Ctrl-Z`, `Ctrl-D`).
+*   **Recursive Descent Parser**: Commands are parsed utilizing a custom recursive descent approach based on a formal Context-Free Grammar (CFG).
+*   **Advanced Execution Environment**: Supports multi-stage piping (`cmd1 | cmd2 | cmd3`), background processes (`&`), sequential execution (`cmd1 ; cmd2`), and extensive I/O redirection (`<`, `>`, `>>`).
+*   **Custom Built-ins**: Features built-in commands natively handled by the shell, including `hop` (cd), `reveal` (ls), `log` (history), and `activities` (job tracking).
 
-The parser uses a recursive descent approach based on a formal CFG. The executor handles fork/exec with proper process groups so job control actually works.
+### The Reliable UDP Protocol (`networking/`)
+SHAM is a custom transport layer protocol built directly over UDP sockets, essentially re-implementing the core reliability mechanisms of TCP by hand.
 
-```
-shell/
-├── include/          # headers for each module
-│   ├── shell.h       # global state struct
-│   ├── parser.h      # command grammar structs
-│   ├── executor.h    # execution interface
-│   ├── builtins.h    # built-in commands
-│   ├── signals.h     # signal setup
-│   ├── jobs.h        # job tracking
-│   └── prompt.h      # prompt display
-├── src/              # implementation
-│   ├── main.c        # REPL loop
-│   ├── parser.c      # tokenizer + parser
-│   ├── executor.c    # fork/exec, pipes, redirection
-│   ├── builtins.c    # hop, reveal, log, fg, bg, etc.
-│   ├── signals.c     # SIGINT, SIGTSTP, SIGCHLD
-│   ├── jobs.c        # background job management
-│   └── prompt.c      # prompt rendering
-└── Makefile
-```
+*   **Connection State Management**: Implements a 3-way handshake (SYN, SYN-ACK, ACK) for connection setup and a 4-way FIN handshake for graceful teardown.
+*   **Reliable Data Transfer**: Utilizes a sliding window mechanism with cumulative ACKs and timeout-based retransmission of lost packets.
+*   **Flow Control**: Receiver constantly advertises available buffer space to prevent network congestion.
+*   **Loss Simulation & Chat**: Supports simulated packet drops for robustness testing, alongside a bidirectional `select()` based multiplexed chat mode.
 
-### Build and run
+---
 
+## Development Timeline
+
+This project was built iteratively over a two-week period in December 2025. Below is the exact progression of the development from the commit history:
+
+| Date | Commit Detail |
+| :--- | :--- |
+| **Dec 10, 2025** | Initialized project structure and architecture setup. |
+| **Dec 11, 2025** | Designed the core shell REPL and main execution loop. |
+| **Dec 12, 2025** | Implemented custom prompting and OS-level signal handling. |
+| **Dec 14, 2025** | Built the recursive descent tokenizer and parser for shell commands. |
+| **Dec 15, 2025** | Implemented the executor module for `fork`/`exec`, pipes, and redirection. |
+| **Dec 17, 2025** | Engineered background process and job state management. |
+| **Dec 18, 2025** | Finalized shell built-in commands and Makefile pipeline. |
+| **Dec 19, 2025** | Initialized reliable UDP protocol structures and headers. |
+| **Dec 21, 2025** | Developed the UDP server-side handshake, flow control, and sliding logic. |
+| **Dec 22, 2025** | Implemented the UDP client-side serialization, dispatch, and timeout mechanisms. |
+| **Dec 23, 2025** | Integrated networking Makefile and finalized the reliable transport layer. |
+| **Dec 24, 2025** | Comprehensive documentation and README polish. |
+
+---
+
+## Build and Usage Instructions
+
+### Prerequisites
+*   Linux or WSL environment
+*   GCC (C99 support)
+*   `sudo apt install build-essential libssl-dev`
+
+### Running the Shell
 ```bash
 cd shell
 make clean && make all
 ./shell.out
 ```
 
-### Quick demo
-
-```
-<nischal@laptop:~> echo hello > test.txt
-<nischal@laptop:~> cat test.txt | wc -w
-1
-<nischal@laptop:~> sleep 30 &
-[1] 12345
-<nischal@laptop:~> activities
-[12345] : sleep 30 - Running
-<nischal@laptop:~> hop /tmp
-<nischal@laptop:/tmp> hop -
-<nischal@laptop:~> log
-echo hello > test.txt
-cat test.txt | wc -w
-sleep 30
-```
-
----
-
-## Networking (`networking/`)
-
-SHAM is a reliable protocol built on UDP sockets. It handles everything that makes TCP reliable, implemented by hand.
-
-What it does:
-- **Connection setup** — 3-way handshake (SYN, SYN-ACK, ACK)
-- **Connection teardown** — 4-way FIN handshake
-- **Reliable transfer** — Sliding window with cumulative ACKs
-- **Retransmission** — Timeout-based resending of lost packets
-- **Flow control** — Receiver advertises available buffer space
-- **File transfer** — Sends files reliably, server prints MD5 hash to verify
-- **Chat mode** — Bidirectional messaging with `select()` for I/O multiplexing
-- **Packet loss testing** — Pass a drop rate to simulate unreliable networks
-- **Logging** — Set `RUDP_LOG=1` for timestamped packet-level logs
-
-```
-networking/
-├── sham.h      # packet format, serialization helpers, logging
-├── server.c    # receives files / runs chat mode
-├── client.c    # sends files / runs chat mode
-└── Makefile
-```
-
-### Build and run
-
+### Running the Reliable Protocol
 ```bash
 cd networking
-sudo apt install libssl-dev   # needed for MD5
 make
 
-# send a file
+# Reliable File Transfer
 ./server 8080 &
 ./client 127.0.0.1 8080 myfile.txt output.txt
 
-# chat mode
+# Chat Mode (Bidirectional Multiplexing)
 ./server 9090 --chat &
 ./client 127.0.0.1 9090 --chat
-
-# test with 10% packet loss
-./server 8080 0.1 &
-./client 127.0.0.1 8080 myfile.txt output.txt 0.1
 ```
 
 ---
 
-## Requirements
+## Technical Learnings
+*   **Operating Systems**: Deepened understanding of process groups, terminal control structures, and signal forwarding natively at the kernel level.
+*   **Networking**: Internalized the necessity and complexity of TCP mechanisms (sequence numbers, ACKs, retransmission) by building them entirely from scratch over stateless UDP.
+*   **Asynchronous I/O**: Mastered `select()` to enable non-blocking I/O multiplexing across multiple file descriptors.
+*   **Parsers**: Gained practical experience implementing a recursive descent parser based on formal grammar rules.
 
-```bash
-sudo apt install build-essential libssl-dev
-```
-
-- Linux or WSL
-- GCC with C99 support
-- libssl-dev (for networking MD5)
-
-## What I learned building this
-
-- How shells actually work under the hood — process groups, terminal control, signal forwarding
-- The difference between `fork+exec` and just `fork`
-- Why TCP needs all those mechanisms (sequence numbers, ACKs, retransmission) — building them from scratch makes it click
-- How `select()` enables non-blocking I/O multiplexing
-- Parsing with recursive descent based on a formal grammar
-- Managing zombie processes and background jobs properly
+<div align="center">
+  <i>Developed by G. Nischal</i>
+</div>
